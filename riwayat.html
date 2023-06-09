@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://kit.fontawesome.com/add3d2a7df.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+    integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <div class="page d-flex align-items-end flex-column py-0">
+    <div class="bg-brown p-3 w-100 text-white rounded-bottom d-flex justify-content-between">
+      <span> Melakukan Reservasi Lapangan </span>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+      <script>
+        function logout() {
+          alert('berhasil logout')
+          window.location = "/JK"
+        }
+      </script>
+      <button class="btn text-white" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        <i class="fa-solid fa-bell"></i>
+      </button>
+      <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">Belum Ada Notifikasi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="w-100">
+      <h4 class="my-3">Riwayat Reservasi</h4>
+      <ul class="list-group" id="riwayat">
+
+      </ul>
+    </div>
+    <div class="bg-brown p-3 px-sm-0 mt-auto w-100 d-flex justify-content-around">
+      <a href="reservasi.html" class="btn btn-success py-2 btn-menu">Ketersediaan</a>
+      <a href="reservasi_form.html" class="btn btn-success py-2 btn-menu">Reservasi</a>
+      <a href="#" class="btn btn-success py-2 btn-menu disabled">Riwayat</a>
+    </div>
+  </div>
+
+</body>
+
+</html>
+<script>
+  let dataRiwayat = [];
+  function konfirmasi(id) {
+    $.ajax({
+      type: "GET",
+      url: "reservasi.php?riwayat=1&id=" + id,
+      dataType: "json",
+      encode: true,
+      error: function (xhr, ajaxOptions, thrownError) {
+        alert(xhr.responseText);
+      },
+    }).done(function (data) {
+      window.location.href = "?riwayat=1&id=" + id;
+    });
+  }
+  // ambil semua jadwal yang dipesan
+  $(document).ready(function () {
+
+    $.ajax({
+      type: "GET",
+      url: "reservasi.php?riwayat=1",
+      dataType: "json",
+      encode: true,
+      error: function (xhr, ajaxOptions, thrownError) {
+        alert(xhr.responseText);
+      },
+    }).done(function (data) {
+      dataRiwayat = data
+      data.forEach(element => {
+        console.log('4');
+        let dataAppend = ' <li class="list-group-item" id="item' + element.id + '"> Lapangan ' + element.lapangan + ' <br /> ' + element.tanggal + ' <br /> ' + element.jam_penyewaan + ':00 <br /> ';
+        if (element.confirm == 0) {
+          dataAppend = dataAppend + '<button class="btn btn-success" onclick="konfirmasi(' + element.id + ')">Konfirmasi</button>'
+          dataAppend = dataAppend + '<button class="ms-2 btn btn-primary" onclick="reschedule(' + element.id + ')">Reschedule</button>'
+        }
+        dataAppend = dataAppend + '</li>'
+        $("#riwayat").append(dataAppend)
+      });
+    });
+  });
+  function reschedule(idData) {
+    const findData = dataRiwayat.find(({ id }) => id == idData);
+    console.log(findData);
+    let dataAppend = '<div> Lapangan ' + findData.lapangan + '<br/> <input type="date" name="tanggal" id="tanggal" class="form-control" value="' + findData.tanggal + '"> <select type="number" name="jam_penyewaan" class="form-control rounded mb-4" value="' + findData.jam_penyewaan + '" placeholder="Isi Jam Penyewaan" id="penyewaan" required> </select> </div>'
+    dataAppend = dataAppend + '<button class="btn btn-success" onclick="submitEdit(' + findData.id + ')">Submit</button>'
+    dataAppend = dataAppend + '<button class="ms-2 btn btn-danger" onclick="cancelEdit(' + findData.id + ')">Cancel</button>'
+    $("#item" + idData).html(dataAppend)
+    const tgl = findData.tanggal;
+    // Cek jam yang dipakai seusai tanggal yang dipilih
+    $.ajax({
+      type: "GET",
+      url: "reservasi.php",
+      data: {
+        tanggal: tgl
+      },
+      dataType: "json",
+      encode: true,
+      error: function (xhr, ajaxOptions, thrownError) {
+        // alert jika error
+        console.log(thrownError);
+        alert(xhr.responseText);
+      },
+    }).done(function (data) {
+      $('#penyewaan').prop("disabled", false);
+      // BRUTE FORCE
+      // Cek jam satu persatu mulai dari 0 sampai 24
+      for (let index = 0; index < 25; index++) {
+        // Buat html option
+        let option = '<option value="' + index + '">' + index + ':00</option>'
+        // Cek setiap tanggal yang terpakai
+        data.forEach(element => {
+          // Jika jam sama dengan jam yang dipakai maka option dirubah dengan opsi disable agar tidak dapat dipilih
+          if (element == index) {
+            option = '<option disabled>' + index + ':00</option>'
+          }
+        });
+        // masukan semua pilihan opsi ke dalam html
+        $('#penyewaan').append(option)
+      }
+    });
+    // Jika tanggal diganti jalankan fungsi ini
+    $('#tanggal').change(function () {
+      // Kosongkan pilihan select waktu
+      $('#penyewaan').prop("disabled", true);
+      $('#penyewaan').prop("value", "");
+      $('#penyewaan').html('<option value="" selected>Pilih Jam Penyewaan</option>')
+      // Ambil variable tanggal
+      const tgl = $(this).val();
+      // Cek jam yang dipakai seusai tanggal yang dipilih
+      $.ajax({
+        type: "GET",
+        url: "reservasi.php",
+        data: {
+          tanggal: tgl
+        },
+        dataType: "json",
+        encode: true,
+        error: function (xhr, ajaxOptions, thrownError) {
+          // alert jika error
+          console.log(thrownError);
+          alert(xhr.responseText);
+        },
+      }).done(function (data) {
+        $('#penyewaan').prop("disabled", false);
+        // BRUTE FORCE
+        // Cek jam satu persatu mulai dari 0 sampai 24
+        for (let index = 0; index < 25; index++) {
+          // Buat html option
+          let option = '<option value="' + index + '">' + index + ':00</option>'
+          // Cek setiap tanggal yang terpakai
+          data.forEach(element => {
+            // Jika jam sama dengan jam yang dipakai maka option dirubah dengan opsi disable agar tidak dapat dipilih
+            if (element == index) {
+              option = '<option disabled>' + index + ':00</option>'
+            }
+          });
+          // masukan semua pilihan opsi ke dalam html
+          $('#penyewaan').append(option)
+        }
+      });
+    });
+
+  }
+  function cancelEdit(idData) {
+    const findData = dataRiwayat.find(({ id }) => id == idData);
+    let dataAppend = '  Lapangan ' + findData.lapangan + ' <br /> ' + findData.tanggal + ' <br /> ' + findData.jam_penyewaan + ':00 <br /> ';
+    dataAppend = dataAppend + '<button class="btn btn-success" onclick="konfirmasi(' + findData.id + ')">Konfirmasi</button>'
+    dataAppend = dataAppend + '<button class="ms-2 btn btn-primary" onclick="reschedule(' + findData.id + ')">Reschedule</button>'
+
+    $("#item" + idData).html(dataAppend)
+  }
+  function submitEdit(idData) {
+    $.ajax({
+        type: "POST",
+        url: "reservasi.php",
+        data: {
+          tanggal: $('#tanggal').val(),
+          jam_penyewaan: $('#penyewaan').val(),
+          id: idData,
+        },
+        dataType: "json",
+        encode: true,
+        error: function (xhr, ajaxOptions, thrownError) {
+          // alert jika error
+          console.log(thrownError);
+          alert(xhr.responseText);
+        },
+      }).done(function (data) {
+        const findData = dataRiwayat.find(({ id }) => id == idData);
+        let dataAppend = '  Lapangan ' + findData.lapangan + ' <br /> ' + $('#tanggal').val() + ' <br /> ' + $('#penyewaan').val() + ':00 <br /> ';
+        dataAppend = dataAppend + '<button class="btn btn-success" onclick="konfirmasi(' + idData + ')">Konfirmasi</button>'
+        dataAppend = dataAppend + '<button class="ms-2 btn btn-primary" onclick="reschedule(' + idData + ')">Reschedule</button>'
+        $("#item" + idData).html(dataAppend)
+        console.log("mari su");
+      });
+  }
+
+</script>
