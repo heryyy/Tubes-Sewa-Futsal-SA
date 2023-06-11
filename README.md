@@ -1,2 +1,2 @@
 # Kelompok 4
-# IF4501
+Berisi hasil kodingan untuk memenuhi tugas Strategi Algoritma
